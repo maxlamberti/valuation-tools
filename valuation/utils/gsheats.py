@@ -1,5 +1,8 @@
+import re
 import gspread
 import pandas as pd
+
+from valuation.utils.data import standardize_date
 
 
 class Sheet:
@@ -37,10 +40,17 @@ class Sheet:
         raise IndexError("Unable to resolve index {} in sheet".format(key))
 
     def columns(self) -> list[str]:
-        return list(self.sheet.columns())
+        return list(self.sheet.columns)
 
     def rows(self) -> list[str]:
         return list(self.sheet.index.values)
+
+    def date_columns(self) -> list[str]:
+        return [c for c in self.sheet.columns if re.match('\d{2}-\d{2}-\d{2}', c.replace('/', '-')) is not None]
+
+    def to_series(self, metric: str) -> pd.Series:
+        return pd.Series(self.sheet.loc[metric, self.date_columns()].values,
+                         index=standardize_date(list(self.date_columns())))
 
 
 def load_sheets(sheet_title: str, credentials: str) -> dict[str, Sheet]:
