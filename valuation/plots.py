@@ -55,7 +55,7 @@ def plot_realized_and_predicted_timeseries(realized: pd.Series = None, expected:
 
 
 def plot_history_and_time_series_dist_from_sheet(sheet: Sheet, metric: str, timeseries_dist: TimeSeriesDistribution,
-                                                 analyst_estimates: pd.Series = None, std_range: float = 2,
+                                                 analyst_estimates: pd.Series = None, credibility_interval: float = 80,
                                                  future_dates: list[datetime.date] = None, savepath: str = None):
 
     realized = pd.Series(
@@ -68,17 +68,14 @@ def plot_history_and_time_series_dist_from_sheet(sheet: Sheet, metric: str, time
         terminal_date = (valuation_date + datetime.timedelta(days=365 * (timeseries_dist.num_periods - 1))).replace(day=31, month=12)
         future_dates = [v[1] for v in eoy_period_generator(valuation_date, terminal_date)]
 
-    predicted = pd.Series(
-        timeseries_dist.values.mean(axis=0),
-        index=future_dates
-    )
-
-    upper = predicted + std_range * timeseries_dist.values.std(axis=0)
-    lower = predicted - std_range * timeseries_dist.values.std(axis=0)
+    mean = pd.Series(timeseries_dist.values.mean(axis=0), index=future_dates)
+    credibility_tail = (100 - credibility_interval) / 2
+    upper = pd.Series(np.percentile(timeseries_dist.values, 100 - credibility_tail, axis=0), index=future_dates)
+    lower = pd.Series(np.percentile(timeseries_dist.values, credibility_tail, axis=0), index=future_dates)
 
     fig = plot_realized_and_predicted_timeseries(
         realized,
-        predicted,
+        mean,
         upper,
         lower,
         analyst_estimates,
@@ -92,7 +89,7 @@ def plot_history_and_time_series_dist_from_sheet(sheet: Sheet, metric: str, time
 def plot_history_and_time_series_dist_from_series(realized: pd.Series, metric: str,
                                                   timeseries_dist: TimeSeriesDistribution,
                                                   analyst_estimates: pd.Series = None,
-                                                  std_range: float = 2,
+                                                  credibility_interval: float = 80,
                                                   future_dates: list[datetime.date] = None,
                                                   savepath: str = None):
 
@@ -101,17 +98,14 @@ def plot_history_and_time_series_dist_from_series(realized: pd.Series, metric: s
         terminal_date = (valuation_date + datetime.timedelta(days=365 * (timeseries_dist.num_periods - 1))).replace(day=31, month=12)
         future_dates = [v[1] for v in eoy_period_generator(valuation_date, terminal_date)]
 
-    predicted = pd.Series(
-        timeseries_dist.values.mean(axis=0),
-        index=future_dates
-    )
-
-    upper = predicted + std_range * timeseries_dist.values.std(axis=0)
-    lower = predicted - std_range * timeseries_dist.values.std(axis=0)
+    mean = pd.Series(timeseries_dist.values.mean(axis=0), index=future_dates)
+    credibility_tail = (100 - credibility_interval) / 2
+    upper = pd.Series(np.percentile(timeseries_dist.values, 100 - credibility_tail, axis=0), index=future_dates)
+    lower = pd.Series(np.percentile(timeseries_dist.values, credibility_tail, axis=0), index=future_dates)
 
     fig = plot_realized_and_predicted_timeseries(
         realized,
-        predicted,
+        mean,
         upper,
         lower,
         analyst_estimates,
@@ -122,19 +116,17 @@ def plot_history_and_time_series_dist_from_series(realized: pd.Series, metric: s
     return fig
 
 
-def plot_value_histogram(value_samples: np.ndarray, current_price: float = None, savepath: str = None):
+def plot_histogram(samples: np.ndarray, vline: float = None, title: str = '', xlabel: str = '',
+                   ylabel: str = 'Probability', savepath: str = None, nbins: int = None):
 
-    title = "Value Distribution"
+    fig = go.Figure(data=[go.Histogram(x=samples, histnorm='probability', nbinsx=nbins)])
 
-    fig = go.Figure(data=[go.Histogram(x=value_samples, histnorm='probability')])
-
-    if current_price is not None:
-        title += " And Current Market Price"
-        fig.add_vline(x=current_price, line_color='red')
+    if vline is not None:
+        fig.add_vline(x=vline, line_color='red')
 
     fig.update_layout(title=title, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-    fig.update_xaxes(showline=True, linewidth=2, linecolor='black', title='Price')
-    fig.update_yaxes(showline=True, linewidth=2, linecolor='black', title='Probability')
+    fig.update_xaxes(showline=True, linewidth=2, linecolor='black', title=xlabel)
+    fig.update_yaxes(showline=True, linewidth=2, linecolor='black', title=ylabel)
 
     if savepath is not None:
         fig.write_html(os.path.expanduser(savepath))
