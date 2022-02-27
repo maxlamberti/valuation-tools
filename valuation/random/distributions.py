@@ -15,13 +15,20 @@ class RandomValue:
         return self.values.shape
 
     def __mul__(self, other: float | RandomValue) -> RandomValue:
-        return RandomValue(other.values * self.values)
+        other = other.values if isinstance(other, RandomValue) else other
+        return RandomValue(other * self.values)
 
     def __add__(self, other: float | RandomValue) -> RandomValue:
-        return RandomValue(self.values + other.values)
+        other = other.values if isinstance(other, RandomValue) else other
+        return RandomValue(self.values + other)
 
     def __sub__(self, other: float | RandomValue) -> RandomValue:
-        return RandomValue(self.values - other.values)
+        other = other.values if isinstance(other, RandomValue) else other
+        return RandomValue(self.values - other)
+
+    def __truediv__(self, other: float | RandomValue) -> RandomValue:
+        other = other.values if isinstance(other, RandomValue) else other
+        return RandomValue(self.values / other)
 
     def __repr__(self) -> str:
         return self.values.__repr__()
@@ -31,6 +38,7 @@ class RandomValue:
 
     __rmul__ = __mul__
     __radd__ = __add__
+    __floordiv__ = __truediv__
 
 
 class NormalRv(RandomValue):
@@ -62,6 +70,9 @@ class TimeSeriesDistribution(RandomValue):
             num_periods = max_arg_shape
         elif num_periods is None:
             num_periods = 1
+
+        self.num_periods = num_periods
+        self.num_samples = num_samples
 
         super().__init__(dist(*args, **kwargs, size=(num_samples, num_periods)))
 
