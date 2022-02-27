@@ -18,6 +18,27 @@ def to_float(x: str) -> float:
     return result
 
 
+def standardize_date(x: str | list | datetime.date | datetime.datetime) -> datetime.date:
+
+    if isinstance(x, list):
+        result = [standardize_date(x_i) for x_i in x]
+    elif isinstance(x, str):
+        x = x.replace('/', '-').replace(' E', '').replace(' A', '')
+        if len(x) == 8:
+            split_x = x.split('-')
+            century = '19' if int(split_x[2]) > 50 else '20'
+            x = '-'.join([century + split_x[2], split_x[0], split_x[1]])
+        result = datetime.datetime.strptime(x, '%Y-%m-%d').date()
+    elif isinstance(x, datetime.datetime):
+        result = x.date()
+    elif isinstance(x, datetime.date):
+        result = x
+    else:
+        raise ValueError("Do not understand input type {} for input {}".format(type(x), x))
+
+    return result
+
+
 def eoy_period_generator(start: datetime.date, end: datetime.date):
     assert end > start, 'Expected end time to be greater than start time.'
 
