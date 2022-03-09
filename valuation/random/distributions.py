@@ -59,7 +59,17 @@ class UniformRv(RandomValue):
 
 class TimeSeriesDistribution(RandomValue):
 
-    def __init__(self, num_samples: int, dist: Callable, *args, num_periods: int = None, **kwargs) -> None:
+    def __init__(self, num_samples: int, dist: Callable = None, *args, num_periods: int = None, **kwargs) -> None:
+
+        # dirty override for constructor if want to init from existing numpy array or random value
+        if isinstance(num_samples, np.ndarray):
+            self.num_periods, self.num_samples = num_samples.shape
+            super().__init__(num_samples)
+            return
+        elif isinstance(num_samples, (RandomValue, TimeSeriesDistribution)):
+            self.num_periods, self.num_samples = num_samples.value.shape
+            super().__init__(num_samples.values)
+            return
 
         list_args = [len(arg) for arg in args if isinstance(arg, list) or isinstance(arg, np.ndarray)]
         max_arg_shape = max(list_args) if len(list_args) != 0 else None

@@ -7,7 +7,7 @@ import plotly.graph_objects as go
 from valuation.utils.gsheats import Sheet
 from valuation.utils.data import standardize_date
 from valuation.utils.data import eoy_period_generator
-from valuation.random.distributions import TimeSeriesDistribution
+from valuation.random.distributions import TimeSeriesDistribution, RandomValue
 
 
 def plot_realized_and_ts_distribution(realized: pd.Series = None, predicted_distribution: TimeSeriesDistribution = None,
@@ -17,7 +17,7 @@ def plot_realized_and_ts_distribution(realized: pd.Series = None, predicted_dist
                                       savepath: str = None):
     fig = go.Figure()
 
-    if isinstance(predicted_distribution, TimeSeriesDistribution):
+    if isinstance(predicted_distribution, (RandomValue, TimeSeriesDistribution)):
 
         for percentile in [68, 90, 95]:
             tail = (100 - percentile) / 2
